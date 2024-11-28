@@ -7,7 +7,7 @@ interface Product {
     name: string;
     price: number;
     quantity: number;
-    categories: { id: number; name: string }[];
+    categories?: { id: number; name: string }[]; // Może być opcjonalne
 }
 
 interface Category {
@@ -22,12 +22,13 @@ interface ProductListProps {
 const ProductList: React.FC<ProductListProps> = ({ addToCart }) => {
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
-    const [selectedCategories, setSelectedCategories] = useState<Set<number>>(new Set());
+    const [selectedCategories, setSelectedCategories] = useState<number | null>(null); // Tylko jedna kategoria
     const [sortOption, setSortOption] = useState<string>("");
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // Pobieranie kategorii
     useEffect(() => {
         const fetchCategories = async () => {
             try {
@@ -42,17 +43,19 @@ const ProductList: React.FC<ProductListProps> = ({ addToCart }) => {
         fetchCategories();
     }, []);
 
-    const fetchProducts = async (categoryIds: number[] = []) => {
+    // Pobieranie produktów
+    const fetchProducts = async (categoryId: number | null = null) => {
         try {
             setLoading(true);
-            const url =
-                categoryIds.length > 0
-                    ? `http://localhost:8080/products?categoryIds=${categoryIds.join(",")}`
-                    : "http://localhost:8080/products";
+
+            // Sprawdzenie, czy filtrujemy po kategorii
+            const url = categoryId
+                ? `http://localhost:8080/products/by-category?categoryId=${categoryId}`
+                : "http://localhost:8080/products";
 
             const response = await fetch(url);
             if (!response.ok) throw new Error("Failed to fetch products");
-            const data = await response.json();
+            const data: Product[] = await response.json();
             setProducts(data);
         } catch (err: any) {
             setError(err.message);
@@ -61,20 +64,13 @@ const ProductList: React.FC<ProductListProps> = ({ addToCart }) => {
         }
     };
 
+    // Pobieranie produktów przy pierwszym załadowaniu lub zmianie kategorii
     useEffect(() => {
-        fetchProducts(Array.from(selectedCategories));
+        fetchProducts(selectedCategories);
     }, [selectedCategories]);
 
-    const toggleCategory = (categoryId: number) => {
-        setSelectedCategories((prev) => {
-            const newSet = new Set(prev);
-            if (newSet.has(categoryId)) {
-                newSet.delete(categoryId);
-            } else {
-                newSet.add(categoryId);
-            }
-            return newSet;
-        });
+    const handleCategoryClick = (categoryId: number) => {
+        setSelectedCategories((prev) => (prev === categoryId ? null : categoryId)); // Kliknięcie tej samej kategorii odznacza ją
     };
 
     const handleSortChange = (option: string) => {
@@ -88,6 +84,14 @@ const ProductList: React.FC<ProductListProps> = ({ addToCart }) => {
         setProducts(sortedProducts);
     };
 
+    const getCurrentCategoryName = () => {
+        if (!selectedCategories) return "Wszystkie produkty";
+        const selectedCategory = categories.find(
+            (category) => category.id === selectedCategories
+        );
+        return selectedCategory ? selectedCategory.name : "Wszystkie produkty";
+    };
+
     return (
         <div className="product-list-container">
             <aside className="category-sidebar">
@@ -96,9 +100,9 @@ const ProductList: React.FC<ProductListProps> = ({ addToCart }) => {
                     <div
                         key={category.id}
                         className={`category-card ${
-                            selectedCategories.has(category.id) ? "selected" : ""
+                            selectedCategories === category.id ? "selected" : ""
                         }`}
-                        onClick={() => toggleCategory(category.id)}
+                        onClick={() => handleCategoryClick(category.id)}
                     >
                         {category.name}
                     </div>
@@ -109,22 +113,24 @@ const ProductList: React.FC<ProductListProps> = ({ addToCart }) => {
                     <button onClick={() => handleSortChange("price")}>Cena</button>
                 </div>
             </aside>
-            <main className="product-grid">
-                <h1>Lista Produktów</h1>
-                {loading && <p>Ładowanie...</p>}
-                {error && <p style={{ color: "red" }}>{error}</p>}
-                {!loading &&
-                    !error &&
-                    products.map((product) => (
-                        <div className="product-card" key={product.id}>
-                            <Link to={`/products/${product.id}`}>
-                                <h2>{product.name}</h2>
-                                <p>Cena: {product.price} PLN</p>
-                                <p>Ilość: {product.quantity}</p>
-                            </Link>
-                        </div>
-                    ))}
-            </main>
+            <div className="main-content">
+                <h2 className="product-header">{getCurrentCategoryName()}</h2>
+                <div className="product-grid">
+                    {loading && <p>Ładowanie...</p>}
+                    {error && <p style={{ color: "red" }}>{error}</p>}
+                    {!loading &&
+                        !error &&
+                        products.map((product) => (
+                            <div className="product-card" key={product.id}>
+                                <Link to={`/products/${product.id}`}>
+                                    <h2>{product.name}</h2>
+                                    <p>Cena: {product.price} PLN</p>
+                                    <p>Ilość: {product.quantity}</p>
+                                </Link>
+                            </div>
+                        ))}
+                </div>
+            </div>
         </div>
     );
 };
