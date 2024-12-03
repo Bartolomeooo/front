@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./Cart.scss";
+import { useNavigate } from "react-router-dom";
 
 interface Product {
     id: number;
@@ -21,6 +22,8 @@ interface CartProps {
 const Cart: React.FC<CartProps> = ({ cart, updateCart }) => {
     const [coupon, setCoupon] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false); // For showing spinner during updates
+    const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
 
     const handleQuantityChange = async (id: number, quantity: number) => {
         setLoading(true); // Start loading
@@ -46,6 +49,32 @@ const Cart: React.FC<CartProps> = ({ cart, updateCart }) => {
         console.log(`Applying coupon: ${coupon}`);
         // Logic to validate and apply the coupon
     };
+
+    const handlePlaceOrder = async () => {
+        const token = localStorage.getItem("token"); // Pobierz token z localStorage
+        try {
+            const response = await fetch("http://localhost:8080/orders", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`, // Dodaj token do nagłówka
+                },
+                body: JSON.stringify({
+                    // Dane zamówienia
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Nie udało się złożyć zamówienia. Spróbuj ponownie.");
+            }
+
+            const data = await response.json();
+            console.log("Zamówienie złożone:", data);
+        } catch (err: any) {
+            console.error(err.message);
+        }
+    };
+
 
     const total = cart.reduce(
         (sum, item) => sum + item.product.price * item.quantity,
@@ -121,10 +150,15 @@ const Cart: React.FC<CartProps> = ({ cart, updateCart }) => {
                                     `${total} PLN`
                                 )}
                             </h3>
-                            <button className="order-button">
-                                Złóż zamówienie
+                            <button
+                                className="order-button"
+                                onClick={handlePlaceOrder}
+                                disabled={loading}
+                            >
+                                {loading ? "Składanie zamówienia..." : "Złóż zamówienie"}
                             </button>
                         </div>
+                        {error && <p style={{ color: "red" }}>{error}</p>}
                     </div>
                 </>
             )}
