@@ -1,6 +1,5 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import "./ProductDetails.scss";
 
 interface Product {
     id: number;
@@ -18,7 +17,7 @@ interface Review {
 
 interface ProductDetailsProps {
     addToCart: (product: Product, quantity: number) => void;
-    isAdmin: boolean;
+    isAdmin: boolean; // Dodano do sprawdzania, czy użytkownik jest adminem
 }
 
 const ProductDetails: React.FC<ProductDetailsProps> = ({ addToCart, isAdmin }) => {
@@ -76,24 +75,73 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ addToCart, isAdmin }) =
         fetchData();
     }, [id]);
 
-    const handleAddToCart = () => {
-        if (product) {
-            addToCart(product, quantity);
-            alert("Produkt dodany do koszyka!");
+    const handleUpdateProduct = async () => {
+        try {
+            const response = await fetch(`http://localhost:8080/products/${id}`, {
+                method: "PUT",
+                headers: getAuthHeaders(),
+                body: JSON.stringify(product),
+            });
+
+            if (!response.ok) throw new Error("Failed to update product.");
+            alert("Product updated successfully!");
+            setEditMode(false);
+        } catch (error) {
+            console.error(error);
+            setError("Failed to update product.");
         }
     };
 
-    const quantityOptions = product
-        ? Array.from({ length: product.quantity }, (_, i) => i + 1)
-        : [];
+    const handleDeleteReview = async (reviewId: number) => {
+        try {
+            const response = await fetch(`http://localhost:8080/reviews/${reviewId}`, {
+                method: "DELETE",
+                headers: getAuthHeaders(),
+            });
+
+            if (!response.ok) throw new Error("Failed to delete review.");
+            setReviews((prev) => prev.filter((review) => review.id !== reviewId));
+        } catch (error) {
+            console.error(error);
+            setError("Failed to delete review.");
+        }
+    };
+
+    const handleSetQuantityToZero = async () => {
+        if (product) {
+            try {
+                const response = await fetch(`http://localhost:8080/products/${id}`, {
+                    method: "PUT",
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ ...product, quantity: 0 }),
+                });
+
+                if (!response.ok) throw new Error("Failed to update product quantity.");
+                setProduct({ ...product, quantity: 0 });
+                alert("Product marked as unavailable.");
+            } catch (error) {
+                console.error(error);
+                setError("Failed to update product quantity.");
+            }
+        }
+    };
 
     return (
-        <div className="product-details-container">
+        <div style={{ maxWidth: "800px", margin: "20px auto", textAlign: "center" }}>
             {loading && <p>Ładowanie...</p>}
-            {error && <p className="error-message">{error}</p>}
+            {error && <p style={{ color: "red" }}>{error}</p>}
             {!loading && product && (
-                <div className="product-details">
-                    <div className="product-details-content">
+                <>
+                    <div
+                        style={{
+                            padding: "20px",
+                            border: "1px solid #ddd",
+                            borderRadius: "10px",
+                            backgroundColor: "#fff",
+                            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+                            textAlign: "center",
+                        }}
+                    >
                         {editMode ? (
                             <>
                                 <input
@@ -123,78 +171,72 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ addToCart, isAdmin }) =
                                         setProduct((prev) => prev && { ...prev, quantity: Number(e.target.value) })
                                     }
                                 />
-                                <button className="save-button" onClick={() => setEditMode(false)}>
-                                    Zapisz zmiany
-                                </button>
+                                <button onClick={handleUpdateProduct}>Zapisz zmiany</button>
                             </>
                         ) : (
                             <>
                                 <h1>{product.name}</h1>
-                                <p className="product-description">{product.description}</p>
-                                <p className="product-price">
+                                <p
+                                    style={{
+                                        fontStyle: "italic",
+                                        color: "#555",
+                                        margin: "10px 0 20px",
+                                    }}
+                                >
+                                    {product.description}
+                                </p>
+                                <p style={{ fontSize: "1.2rem", margin: "10px 0" }}>
                                     Cena: <strong>{product.price} PLN</strong>
                                 </p>
-                                <p className="product-quantity">
-                                    Ilość dostępna: {product.quantity}
+                                <p style={{ marginBottom: "20px" }}>
+                                    Ilość dostępna: {product.quantity}{" "}
+                                    {product.quantity === 0 && (
+                                        <span style={{ color: "red", fontWeight: "bold" }}>Produkt niedostępny</span>
+                                    )}
                                 </p>
-                                {product.quantity === 0 && (
-                                    <p className="product-unavailable">Produkt niedostępny</p>
-                                )}
-                                {product.quantity > 0 && (
-                                    <div className="add-to-cart">
-                                        <select
-                                            value={quantity}
-                                            onChange={(e) => setQuantity(Number(e.target.value))}
-                                        >
-                                            {quantityOptions.map((opt) => (
-                                                <option key={opt} value={opt}>
-                                                    {opt}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <button
-                                            className="add-to-cart-button"
-                                            onClick={handleAddToCart}
-                                        >
-                                            Dodaj do koszyka
-                                        </button>
-                                    </div>
-                                )}
                             </>
                         )}
                         {isAdmin && (
-                            <div className="admin-actions">
-                                <button
-                                    className="edit-button"
-                                    onClick={() => setEditMode(!editMode)}
-                                >
+                            <>
+                                <button onClick={() => setEditMode(!editMode)}>
                                     {editMode ? "Anuluj" : "Edytuj produkt"}
                                 </button>
+                                <button onClick={handleSetQuantityToZero} style={{ marginLeft: "10px" }}>
+                                    Usuń produkt
+                                </button>
+                            </>
+                        )}
+                    </div>
+                    <h3 style={{ marginTop: "30px" }}>Opinie</h3>
+                    {reviews.length > 0 ? (
+                        reviews.map((review) => (
+                            <div
+                                key={review.id}
+                                style={{
+                                    margin: "10px 0",
+                                    padding: "10px",
+                                    border: "1px solid #ddd",
+                                    borderRadius: "5px",
+                                    backgroundColor: "#f9f9f9",
+                                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                                }}
+                            >
+                                <p>{review.content}</p>
+                                <p style={{ fontWeight: "bold" }}>Ocena: {review.rating}/5</p>
+                                {isAdmin && (
+                                    <button
+                                        onClick={() => handleDeleteReview(review.id)}
+                                        style={{ backgroundColor: "red", color: "white", border: "none" }}
+                                    >
+                                        Usuń opinię
+                                    </button>
+                                )}
                             </div>
-                        )}
-                    </div>
-                    <h3>Opinie</h3>
-                    <div className="reviews">
-                        {reviews.length > 0 ? (
-                            reviews.map((review) => (
-                                <div key={review.id} className="review-card">
-                                    <p>{review.content}</p>
-                                    <p className="review-rating">Ocena: {review.rating}/5</p>
-                                    {isAdmin && (
-                                        <button
-                                            className="delete-review-button"
-                                            onClick={() => console.log(`Usuń opinię: ${review.id}`)}
-                                        >
-                                            Usuń opinię
-                                        </button>
-                                    )}
-                                </div>
-                            ))
-                        ) : (
-                            <p>Brak opinii dla tego produktu.</p>
-                        )}
-                    </div>
-                </div>
+                        ))
+                    ) : (
+                        <p>Brak opinii dla tego produktu.</p>
+                    )}
+                </>
             )}
         </div>
     );

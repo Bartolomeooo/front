@@ -13,6 +13,8 @@ import Login from "./routes/Login/Login";
 import Register from "./routes/Register/Register";
 import CreateProduct from "./routes/create-product/CreateProduct";
 import OrderHistory from "./routes/order-history/OrderHistory";
+import OrderDetails from "./routes/order-details/OrderDetails";
+
 
 interface Product {
     id: number;
@@ -186,6 +188,8 @@ function App() {
                             path="/products/:id"
                             element={<ProductDetails addToCart={addToCart} isAdmin={role === "ADMIN"} />}
                         />
+
+                        <Route path="/orders/:id" element={<OrderDetails />} />
                         <Route
                             path="/cart"
                             element={<Cart cart={cart} updateCart={updateCart} />}

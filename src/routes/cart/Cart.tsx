@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Cart.scss";
 import { useNavigate } from "react-router-dom";
 
@@ -20,24 +20,43 @@ interface CartProps {
 }
 
 const Cart: React.FC<CartProps> = ({ cart, updateCart }) => {
-    const [coupon, setCoupon] = useState<string>("");
-    const [loading, setLoading] = useState<boolean>(false); // For showing spinner during updates
-    const [error, setError] = useState<string | null>(null);
+    const [coupon, setCoupon] = useState<string>(""); // Kod kuponu
+    const [discount, setDiscount] = useState<number>(0); // Rabat w procentach
+    const [couponLoading, setCouponLoading] = useState<boolean>(false);
+    const [orderLoading, setOrderLoading] = useState<boolean>(false);
+    const [couponError, setCouponError] = useState<string | null>(null);
+    const [orderError, setOrderError] = useState<string | null>(null);
     const navigate = useNavigate();
 
-    const handleQuantityChange = async (id: number, quantity: number) => {
-        setLoading(true); // Start loading
-        const updatedCart = cart.map((item) =>
-            item.product.id === id
-                ? { ...item, quantity }
-                : item
-        );
+    // Funkcja do pobrania tokenu z localStorage
+    const getAuthHeaders = (): Record<string, string> => {
+        const token = localStorage.getItem("token");
+        return token
+            ? {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            }
+            : {
+                "Content-Type": "application/json",
+            };
+    };
 
-        // Simulate delay for updating cart
-        setTimeout(() => {
-            updateCart(updatedCart);
-            setLoading(false); // Stop loading
-        }, 500); // Simulate server response delay
+    // Przywracanie kuponu i rabatu z localStorage
+    useEffect(() => {
+        const savedCoupon = localStorage.getItem("couponCode");
+        const savedDiscount = localStorage.getItem("discount");
+
+        if (savedCoupon && savedDiscount) {
+            setCoupon(savedCoupon);
+            setDiscount(Number(savedDiscount));
+        }
+    }, []);
+
+    const handleQuantityChange = (id: number, quantity: number) => {
+        const updatedCart = cart.map((item) =>
+            item.product.id === id ? { ...item, quantity } : item
+        );
+        updateCart(updatedCart);
     };
 
     const handleRemoveProduct = (id: number) => {
@@ -45,41 +64,79 @@ const Cart: React.FC<CartProps> = ({ cart, updateCart }) => {
         updateCart(updatedCart);
     };
 
-    const handleApplyCoupon = () => {
-        console.log(`Applying coupon: ${coupon}`);
-        // Logic to validate and apply the coupon
+    const handleApplyCoupon = async () => {
+        setCouponLoading(true);
+        setCouponError(null);
+
+        try {
+            const response = await fetch(
+                `http://localhost:8080/coupons/validate?code=${coupon}&orderTotal=${total}`,
+                {
+                    method: "GET",
+                    headers: getAuthHeaders(),
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Nieprawidłowy kupon.");
+            }
+
+            const result = await response.json();
+            setDiscount(result.discount); // Rabat w procentach
+            localStorage.setItem("couponCode", coupon);
+            localStorage.setItem("discount", result.discount.toString());
+            alert("Kupon został zastosowany!");
+        } catch (err: any) {
+            setCouponError(err.message);
+            setDiscount(0);
+            localStorage.removeItem("couponCode");
+            localStorage.removeItem("discount");
+        } finally {
+            setCouponLoading(false);
+        }
     };
 
     const handlePlaceOrder = async () => {
-        const token = localStorage.getItem("token"); // Pobierz token z localStorage
+        setOrderLoading(true);
+        setOrderError(null);
+
         try {
             const response = await fetch("http://localhost:8080/orders", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`, // Dodaj token do nagłówka
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
-                    // Dane zamówienia
+                    products: cart.map((item) => ({
+                        productId: item.product.id,
+                        quantity: item.quantity,
+                    })),
+                    couponCode: discount > 0 ? coupon : null,
                 }),
             });
 
             if (!response.ok) {
-                throw new Error("Nie udało się złożyć zamówienia. Spróbuj ponownie.");
+                const errorResponse = await response.json();
+                throw new Error(errorResponse.message || "Nie udało się złożyć zamówienia.");
             }
 
-            const data = await response.json();
-            console.log("Zamówienie złożone:", data);
+            alert("Zamówienie złożone pomyślnie!");
+            updateCart([]); // Wyczyść koszyk po zamówieniu
+            localStorage.removeItem("couponCode");
+            localStorage.removeItem("discount");
+            navigate("/order-history");
         } catch (err: any) {
-            console.error(err.message);
+            setOrderError(err.message);
+        } finally {
+            setOrderLoading(false);
         }
     };
-
 
     const total = cart.reduce(
         (sum, item) => sum + item.product.price * item.quantity,
         0
     );
+
+    const discountedTotal = discount > 0 ? total * (1 - discount / 100) : total;
 
     return (
         <div className="cart-container">
@@ -93,16 +150,15 @@ const Cart: React.FC<CartProps> = ({ cart, updateCart }) => {
                             <div key={item.product.id} className="cart-card">
                                 <div className="cart-card-info">
                                     <h2>{item.product.name}</h2>
-                                    <p>Cena: {item.product.price} PLN</p>
+                                    <p>
+                                        Cena: {item.product.price.toFixed(2)} PLN
+                                    </p>
                                 </div>
                                 <div className="cart-card-controls">
                                     <select
                                         value={item.quantity}
                                         onChange={(e) =>
-                                            handleQuantityChange(
-                                                item.product.id,
-                                                Number(e.target.value)
-                                            )
+                                            handleQuantityChange(item.product.id, Number(e.target.value))
                                         }
                                     >
                                         {Array.from(
@@ -116,9 +172,7 @@ const Cart: React.FC<CartProps> = ({ cart, updateCart }) => {
                                     </select>
                                     <button
                                         className="remove-button"
-                                        onClick={() =>
-                                            handleRemoveProduct(item.product.id)
-                                        }
+                                        onClick={() => handleRemoveProduct(item.product.id)}
                                     >
                                         Usuń
                                     </button>
@@ -137,28 +191,35 @@ const Cart: React.FC<CartProps> = ({ cart, updateCart }) => {
                             <button
                                 className="apply-coupon-button"
                                 onClick={handleApplyCoupon}
+                                disabled={couponLoading || !coupon}
                             >
-                                Użyj kodu
+                                {couponLoading ? "Sprawdzanie..." : "Użyj kodu"}
                             </button>
+                            {couponError && <p style={{ color: "red" }}>{couponError}</p>}
                         </div>
                         <div className="cart-summary">
                             <h3>
                                 Łączna kwota:{" "}
-                                {loading ? (
-                                    <span className="spinner"></span> // Show spinner when loading
+                                {discount > 0 ? (
+                                    <>
+                                        <span style={{ textDecoration: "line-through", color: "gray" }}>
+                                            {total.toFixed(2)} PLN
+                                        </span>{" "}
+                                        {discountedTotal.toFixed(2)} PLN
+                                    </>
                                 ) : (
-                                    `${total} PLN`
+                                    `${total.toFixed(2)} PLN`
                                 )}
                             </h3>
                             <button
                                 className="order-button"
                                 onClick={handlePlaceOrder}
-                                disabled={loading}
+                                disabled={orderLoading}
                             >
-                                {loading ? "Składanie zamówienia..." : "Złóż zamówienie"}
+                                {orderLoading ? "Składanie zamówienia..." : "Złóż zamówienie"}
                             </button>
+                            {orderError && <p style={{ color: "red" }}>{orderError}</p>}
                         </div>
-                        {error && <p style={{ color: "red" }}>{error}</p>}
                     </div>
                 </>
             )}

@@ -1,31 +1,36 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import "./OrderHistory.scss";
 
 interface Order {
     id: number;
-    date: string;
-    totalAmount: number;
-    items: { product: { name: string }; quantity: number }[];
+    total?: number;
+    createdAt: string;
+    products: string[];
 }
 
 const OrderHistory: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+
+    const getAuthHeaders = (): Record<string, string> => {
+        const token = localStorage.getItem("token");
+        return token ? { Authorization: `Bearer ${token}` } : {};
+    };
 
     useEffect(() => {
         const fetchOrders = async () => {
             try {
                 const response = await fetch("http://localhost:8080/orders", {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    },
+                    headers: getAuthHeaders(),
                 });
 
                 if (!response.ok) {
-                    throw new Error("Failed to fetch orders.");
+                    throw new Error("Nie udało się pobrać historii zamówień.");
                 }
 
-                const data = await response.json();
+                const data: Order[] = await response.json();
                 setOrders(data);
             } catch (err: any) {
                 setError(err.message);
@@ -37,30 +42,38 @@ const OrderHistory: React.FC = () => {
         fetchOrders();
     }, []);
 
-    if (loading) return <p>Loading...</p>;
-    if (error) return <p style={{ color: "red" }}>{error}</p>;
-
     return (
-        <div>
-            <h1>Order History</h1>
+        <div className="order-history-container">
+            <h1>Historia zamówień</h1>
+            {loading && <p>Ładowanie...</p>}
+            {error && <p style={{ color: "red" }}>{error}</p>}
+
             {orders.length > 0 ? (
-                orders.map((order) => (
-                    <div key={order.id}>
-                        <h2>Order #{order.id}</h2>
-                        <p>Date: {order.date}</p>
-                        <p>Total: {order.totalAmount} PLN</p>
-                        <ul>
-                            {order.items.map((item, index) => (
-                                <li key={index}>
-                                    {item.product.name} - {item.quantity}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                ))
+                <div className="order-list">
+                    {orders.map((order) => (
+                        <div className="order-card" key={order.id}>
+                            <div>
+                                <h2>ID Zamówienia: {order.id}</h2>
+                                <p>
+                                    Łączna kwota:{" "}
+                                    {order.total !== undefined
+                                        ? `${order.total.toFixed(2)} PLN`
+                                        : "Brak danych"}
+                                </p>
+                                <p>Data: {new Date(order.createdAt).toLocaleDateString()}</p>
+                            </div>
+                            <div>
+                                <Link className="order-details-link" to={`/orders/${order.id}`}>
+                                    Zobacz szczegóły
+                                </Link>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             ) : (
-                <p>No orders found.</p>
+                <p>Brak zamówień do wyświetlenia.</p>
             )}
+
         </div>
     );
 };
