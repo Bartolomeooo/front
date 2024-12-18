@@ -110,3 +110,19 @@
   font-weight: bold;
   text-align: center;
 }
+
+.create-product-button {
+  margin: 20px 0;
+  padding: 10px 15px;
+  font-size: 1rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.create-product-button:hover {
+  background-color: #0056b3;
+}

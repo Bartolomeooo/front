@@ -1,13 +1,18 @@
-import React, { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import {
+    BrowserRouter as Router,
+    Routes,
+    Route,
+    Navigate,
+    Link,
+} from "react-router-dom";
 import ProductList from "./routes/product-list/ProductList";
 import ProductDetails from "./routes/product-details/ProductDetails";
 import Cart from "./routes/cart/Cart";
 import Login from "./routes/Login/Login";
 import Register from "./routes/Register/Register";
+import CreateProduct from "./routes/create-product/CreateProduct";
 import OrderHistory from "./routes/order-history/OrderHistory";
-
-<Route path="/order-history" element={<OrderHistory />} />
 
 interface Product {
     id: number;
@@ -16,86 +21,27 @@ interface Product {
     quantity: number;
 }
 
-const Header: React.FC<{ isAuthenticated: boolean; cartItems: number; handleLogout: () => void }> = ({
-                                                                                                         isAuthenticated,
-                                                                                                         cartItems,
-                                                                                                         handleLogout,
-                                                                                                     }) => {
-    const location = useLocation();
-
-    // Ukryj header na stronach logowania i rejestracji
-    if (location.pathname === "/login" || location.pathname === "/register") {
-        return null;
-    }
-
-    return (
-        <header
-            style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                backgroundColor: "#007BFF",
-                color: "white",
-                padding: "15px 20px",
-            }}
-        >
-            <Link to="/" style={{ color: "white", textDecoration: "none", fontWeight: "bold" }}>
-                Produkty
-            </Link>
-            <div>
-                {isAuthenticated ? (
-                    <>
-                        <Link
-                            to="/cart"
-                            style={{
-                                color: "white",
-                                textDecoration: "none",
-                                fontWeight: "bold",
-                                marginRight: "15px",
-                            }}
-                        >
-                            Koszyk: {cartItems} elementy
-                        </Link>
-                        <button
-                            onClick={handleLogout}
-                            style={{
-                                background: "transparent",
-                                color: "white",
-                                border: "none",
-                                cursor: "pointer",
-                                fontWeight: "bold",
-                                textDecoration: "none", // Dodaj brakujący styl
-                                padding: "0", // Usuń padding przycisku
-                                fontSize: "15px",
-                            }}
-                        >
-                            Wyloguj się
-                        </button>
-                    </>
-                ) : (
-                    <Link
-                        to="/login"
-                        style={{
-                            color: "white",
-                            textDecoration: "none",
-                            fontWeight: "bold",
-                        }}
-                    >
-                        Zaloguj się
-                    </Link>
-                )}
-            </div>
-        </header>
-    );
-};
-
 function App() {
-    const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem("token"));
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const [role, setRole] = useState<string | null>(null);
+    const [cart, setCart] = useState<{ product: Product; quantity: number }[]>(
+        []
+    );
+
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        const userRole = localStorage.getItem("role");
+        if (token) {
+            setIsAuthenticated(true);
+            setRole(userRole);
+        }
+    }, []);
 
     const addToCart = (product: Product, quantity: number) => {
         setCart((prevCart) => {
-            const existingItem = prevCart.find((item) => item.product.id === product.id);
+            const existingItem = prevCart.find(
+                (item) => item.product.id === product.id
+            );
             if (existingItem) {
                 return prevCart.map((item) =>
                     item.product.id === product.id
@@ -111,30 +57,144 @@ function App() {
         setCart(updatedCart);
     };
 
-    const handleLogout = () => {
+    const isAdmin = role === "ADMIN";
+
+    const logout = () => {
         localStorage.removeItem("token");
+        localStorage.removeItem("role");
         setIsAuthenticated(false);
+        setRole(null);
     };
 
     return (
         <Router>
-            <Header
-                isAuthenticated={isAuthenticated}
-                cartItems={cart.reduce((total, item) => total + item.quantity, 0)}
-                handleLogout={handleLogout}
-            />
-            <Routes>
+            <header
+                style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    backgroundColor: "#007BFF",
+                    color: "white",
+                    padding: "15px 20px",
+                }}
+            >
+                <Link
+                    to="/"
+                    style={{
+                        color: "white",
+                        textDecoration: "none",
+                        fontWeight: "bold",
+                    }}
+                >
+                    Produkty
+                </Link>
                 {isAuthenticated ? (
+                    <div style={{ display: "flex", gap: "15px" }}>
+                        <Link
+                            to="/order-history"
+                            style={{
+                                color: "white",
+                                textDecoration: "none",
+                                fontWeight: "bold",
+                            }}
+                        >
+                            Historia zamówień
+                        </Link>
+                        <Link
+                            to="/cart"
+                            style={{
+                                color: "white",
+                                textDecoration: "none",
+                                fontWeight: "bold",
+                            }}
+                        >
+                            Koszyk: {cart.reduce((total, item) => total + item.quantity, 0)}{" "}
+                            elementy
+                        </Link>
+                        {isAdmin && (
+                            <Link
+                                to="/create-product"
+                                style={{
+                                    color: "white",
+                                    textDecoration: "none",
+                                    fontWeight: "bold",
+                                }}
+                            >
+                                Dodaj produkt
+                            </Link>
+                        )}
+                        <button
+                            onClick={logout}
+                            style={{
+                                background: "transparent",
+                                border: "none",
+                                color: "white",
+                                fontWeight: "bold",
+                                cursor: "pointer",
+                            }}
+                        >
+                            Wyloguj się
+                        </button>
+                    </div>
+                ) : (
+                    <div style={{ display: "flex", gap: "15px" }}>
+                        <Link
+                            to="/login"
+                            style={{
+                                color: "white",
+                                textDecoration: "none",
+                                fontWeight: "bold",
+                            }}
+                        >
+                            Zaloguj się
+                        </Link>
+                        <Link
+                            to="/register"
+                            style={{
+                                color: "white",
+                                textDecoration: "none",
+                                fontWeight: "bold",
+                            }}
+                        >
+                            Zarejestruj się
+                        </Link>
+                    </div>
+                )}
+            </header>
+            <Routes>
+                {!isAuthenticated ? (
                     <>
-                        <Route path="/" element={<ProductList addToCart={addToCart} />} />
-                        <Route path="/products/:id" element={<ProductDetails addToCart={addToCart} />} />
-                        <Route path="/cart" element={<Cart cart={cart} updateCart={updateCart} />} />
+                        <Route
+                            path="/login"
+                            element={
+                                <Login
+                                    setIsAuthenticated={setIsAuthenticated}
+                                    setRole={setRole}
+                                />
+                            }
+                        />
+                        <Route path="/register" element={<Register />} />
+                        <Route path="*" element={<Navigate to="/login" />} />
                     </>
                 ) : (
                     <>
-                        <Route path="/login" element={<Login setIsAuthenticated={setIsAuthenticated} />} />
-                        <Route path="/register" element={<Register />} />
-                        <Route path="*" element={<Navigate to="/login" replace />} />
+                        <Route
+                            path="/"
+                            element={<ProductList addToCart={addToCart} isAdmin={isAdmin} />}
+                        />
+                        <Route
+                            path="/products/:id"
+                            element={<ProductDetails addToCart={addToCart} isAdmin={role === "ADMIN"} />}
+                        />
+                        <Route
+                            path="/cart"
+                            element={<Cart cart={cart} updateCart={updateCart} />}
+                        />
+                        <Route path="/order-history" element={<OrderHistory />} />
+                        {isAdmin && (
+                            <Route path="/create-product" element={<CreateProduct />} />
+                        )}
+                        <Route path="*" element={<Navigate to="/" />} />
                     </>
                 )}
             </Routes>

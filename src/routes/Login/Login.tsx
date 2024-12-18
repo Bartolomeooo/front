@@ -1,19 +1,21 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import './Login.scss';
+import { useNavigate } from "react-router-dom";
 
 interface LoginProps {
     setIsAuthenticated: (authenticated: boolean) => void;
+    setRole: (role: string | null) => void; // Dodajemy setRole jako właściwość
 }
 
-const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
+const Login: React.FC<LoginProps> = ({ setIsAuthenticated, setRole }) => {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
     const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault(); // Zapobiegaj domyślnemu zachowaniu formularza
+        e.preventDefault();
+        setError(null); // Reset błędu przed logowaniem
+
         try {
             const response = await fetch("http://localhost:8080/auth/login", {
                 method: "POST",
@@ -35,16 +37,18 @@ const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
             }
 
             const data = await response.json();
-            localStorage.setItem("token", data.token); // Przechowaj token w localStorage
-            setIsAuthenticated(true); // Ustaw zalogowanie
+            localStorage.setItem("token", data.token); // Zapisz token
+            localStorage.setItem("role", data.role); // Zapisz rolę
+            console.log("Role from backend:", data.role);
+
+            setIsAuthenticated(true);
+            setRole(data.role); // Ustaw rolę w stanie
             navigate("/"); // Przekierowanie na stronę główną
-        } catch (error: any) {
-            console.error(error.message);
-            setError(error.message);
+        } catch (err: any) {
+            setError(err.message);
         }
     };
 
-    // Zwrot elementu JSX musi być w ciele funkcji Login
     return (
         <div className="auth-container">
             <h2>Login</h2>
@@ -64,9 +68,6 @@ const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
                 <button type="submit">Zaloguj</button>
             </form>
             {error && <p style={{ color: "red" }}>{error}</p>}
-            <p>
-                Nie masz konta? <Link to="/register">Zarejestruj się</Link>
-            </p>
         </div>
     );
 };

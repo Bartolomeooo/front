@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./ProductList.scss";
 
 interface Product {
@@ -7,7 +7,7 @@ interface Product {
     name: string;
     price: number;
     quantity: number;
-    categories?: { id: number; name: string }[]; // Może być opcjonalne
+    categories?: { id: number; name: string }[];
 }
 
 interface Category {
@@ -17,22 +17,40 @@ interface Category {
 
 interface ProductListProps {
     addToCart: (product: Product, quantity: number) => void;
+    isAdmin: boolean; // Dodano pole do sprawdzania, czy użytkownik jest adminem
 }
 
-const ProductList: React.FC<ProductListProps> = ({ addToCart }) => {
+
+
+const ProductList: React.FC<ProductListProps> = ({ addToCart, isAdmin }) => {
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
-    const [selectedCategories, setSelectedCategories] = useState<number | null>(null); // Tylko jedna kategoria
+    const [selectedCategories, setSelectedCategories] = useState<number | null>(null);
     const [sortOption, setSortOption] = useState<string>("");
-
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate(); // Używane do nawigacji
 
-    // Pobieranie kategorii
+    const getAuthHeaders = (): Record<string, string> => {
+        const token = localStorage.getItem("token");
+        return token
+            ? {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`, // Dodanie tokenu
+            }
+            : {
+                "Content-Type": "application/json", // Brak tokenu
+            };
+    };
+
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await fetch("http://localhost:8080/categories");
+                const response = await fetch("http://localhost:8080/categories", {
+                    method: "GET",
+                    headers: getAuthHeaders(),
+                });
+
                 if (!response.ok) throw new Error("Failed to fetch categories");
                 const data: Category[] = await response.json();
                 setCategories(data);
@@ -43,17 +61,18 @@ const ProductList: React.FC<ProductListProps> = ({ addToCart }) => {
         fetchCategories();
     }, []);
 
-    // Pobieranie produktów
     const fetchProducts = async (categoryId: number | null = null) => {
         try {
             setLoading(true);
-
-            // Sprawdzenie, czy filtrujemy po kategorii
             const url = categoryId
                 ? `http://localhost:8080/products/by-category?categoryId=${categoryId}`
                 : "http://localhost:8080/products";
 
-            const response = await fetch(url);
+            const response = await fetch(url, {
+                method: "GET",
+                headers: getAuthHeaders(),
+            });
+
             if (!response.ok) throw new Error("Failed to fetch products");
             const data: Product[] = await response.json();
             setProducts(data);
@@ -64,13 +83,12 @@ const ProductList: React.FC<ProductListProps> = ({ addToCart }) => {
         }
     };
 
-    // Pobieranie produktów przy pierwszym załadowaniu lub zmianie kategorii
     useEffect(() => {
         fetchProducts(selectedCategories);
     }, [selectedCategories]);
 
     const handleCategoryClick = (categoryId: number) => {
-        setSelectedCategories((prev) => (prev === categoryId ? null : categoryId)); // Kliknięcie tej samej kategorii odznacza ją
+        setSelectedCategories((prev) => (prev === categoryId ? null : categoryId));
     };
 
     const handleSortChange = (option: string) => {
@@ -115,6 +133,18 @@ const ProductList: React.FC<ProductListProps> = ({ addToCart }) => {
             </aside>
             <div className="main-content">
                 <h2 className="product-header">{getCurrentCategoryName()}</h2>
+
+                {/* Przycisk dla admina do tworzenia produktu */}
+                {isAdmin && (
+                    <button
+                        className="create-product-button"
+                        type="button" // Prevents default form behavior
+                        onClick={() => navigate("/create-product")}
+                    >
+                        Dodaj produkt
+                    </button>
+                )}
+
                 <div className="product-grid">
                     {loading && <p>Ładowanie...</p>}
                     {error && <p style={{ color: "red" }}>{error}</p>}
