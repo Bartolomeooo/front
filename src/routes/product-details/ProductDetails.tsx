@@ -1,5 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
+import "./ProductDetails.scss"; // Import stylów z pliku
 
 interface Product {
     id: number;
@@ -17,7 +18,7 @@ interface Review {
 
 interface ProductDetailsProps {
     addToCart: (product: Product, quantity: number) => void;
-    isAdmin: boolean; // Dodano do sprawdzania, czy użytkownik jest adminem
+    isAdmin: boolean;
 }
 
 const ProductDetails: React.FC<ProductDetailsProps> = ({ addToCart, isAdmin }) => {
@@ -75,6 +76,13 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ addToCart, isAdmin }) =
         fetchData();
     }, [id]);
 
+    const handleAddToCart = () => {
+        if (product) {
+            addToCart(product, quantity);
+            alert("Product added to cart!");
+        }
+    };
+
     const handleUpdateProduct = async () => {
         try {
             const response = await fetch(`http://localhost:8080/products/${id}`, {
@@ -126,117 +134,117 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ addToCart, isAdmin }) =
         }
     };
 
+    const quantityOptions = product
+        ? Array.from({ length: product.quantity }, (_, i) => i + 1)
+        : [];
+
     return (
-        <div style={{ maxWidth: "800px", margin: "20px auto", textAlign: "center" }}>
-            {loading && <p>Ładowanie...</p>}
-            {error && <p style={{ color: "red" }}>{error}</p>}
+        <div className="product-details-container">
+            {loading && <p className="loading-text">Loading...</p>}
+            {error && <p className="error-text">{error}</p>}
             {!loading && product && (
-                <>
-                    <div
-                        style={{
-                            padding: "20px",
-                            border: "1px solid #ddd",
-                            borderRadius: "10px",
-                            backgroundColor: "#fff",
-                            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-                            textAlign: "center",
-                        }}
-                    >
-                        {editMode ? (
-                            <>
-                                <input
-                                    type="text"
-                                    value={product.name}
-                                    onChange={(e) =>
-                                        setProduct((prev) => prev && { ...prev, name: e.target.value })
-                                    }
-                                />
-                                <textarea
-                                    value={product.description}
-                                    onChange={(e) =>
-                                        setProduct((prev) => prev && { ...prev, description: e.target.value })
-                                    }
-                                />
-                                <input
-                                    type="number"
-                                    value={product.price}
-                                    onChange={(e) =>
-                                        setProduct((prev) => prev && { ...prev, price: Number(e.target.value) })
-                                    }
-                                />
-                                <input
-                                    type="number"
-                                    value={product.quantity}
-                                    onChange={(e) =>
-                                        setProduct((prev) => prev && { ...prev, quantity: Number(e.target.value) })
-                                    }
-                                />
-                                <button onClick={handleUpdateProduct}>Zapisz zmiany</button>
-                            </>
-                        ) : (
-                            <>
-                                <h1>{product.name}</h1>
-                                <p
-                                    style={{
-                                        fontStyle: "italic",
-                                        color: "#555",
-                                        margin: "10px 0 20px",
-                                    }}
+                <div className="product-details">
+                    {editMode ? (
+                        <div className="edit-mode">
+                            <label htmlFor="name">Product Name:</label>
+                            <input
+                                id="name"
+                                type="text"
+                                value={product.name}
+                                onChange={(e) =>
+                                    setProduct((prev) => prev && { ...prev, name: e.target.value })
+                                }
+                            />
+
+                            <label htmlFor="description">Description:</label>
+                            <textarea
+                                id="description"
+                                value={product.description}
+                                onChange={(e) =>
+                                    setProduct((prev) => prev && { ...prev, description: e.target.value })
+                                }
+                            />
+
+                            <label htmlFor="price">Price:</label>
+                            <input
+                                id="price"
+                                type="number"
+                                value={product.price}
+                                onChange={(e) =>
+                                    setProduct((prev) => prev && { ...prev, price: Number(e.target.value) })
+                                }
+                            />
+
+                            <label htmlFor="quantity">Quantity:</label>
+                            <input
+                                id="quantity"
+                                type="number"
+                                value={product.quantity}
+                                onChange={(e) =>
+                                    setProduct((prev) => prev && { ...prev, quantity: Number(e.target.value) })
+                                }
+                            />
+
+                            <div className="edit-mode-buttons">
+                                <button className="edit-product-button" onClick={handleUpdateProduct}>
+                                    Save Changes
+                                </button>
+                                <button className="cancel-edit-button" onClick={() => setEditMode(false)}>
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <h1>{product.name}</h1>
+                            <p className="product-description">{product.description}</p>
+                            <p className="product-price">Price: {product.price} PLN</p>
+                            <p className="product-quantity">Available: {product.quantity}</p>
+                            <div className="add-to-cart-container">
+                                <select
+                                    value={quantity}
+                                    onChange={(e) => setQuantity(Number(e.target.value))}
+                                    className="select-quantity"
                                 >
-                                    {product.description}
-                                </p>
-                                <p style={{ fontSize: "1.2rem", margin: "10px 0" }}>
-                                    Cena: <strong>{product.price} PLN</strong>
-                                </p>
-                                <p style={{ marginBottom: "20px" }}>
-                                    Ilość dostępna: {product.quantity}{" "}
-                                    {product.quantity === 0 && (
-                                        <span style={{ color: "red", fontWeight: "bold" }}>Produkt niedostępny</span>
-                                    )}
-                                </p>
-                            </>
-                        )}
+                                    {quantityOptions.map((opt) => (
+                                        <option key={opt} value={opt}>
+                                            {opt}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button className="add-to-cart-button" onClick={handleAddToCart}>
+                                    Add to Cart
+                                </button>
+                            </div>
+                        </>
+                    )}
+                    {isAdmin && !editMode && (
+                        <div className="admin-buttons">
+                            <button className="edit-product-button" onClick={() => setEditMode(true)}>
+                                Edit Product
+                            </button>
+                            <button className="remove-product-button" onClick={handleSetQuantityToZero}>
+                                Remove Product
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+            <h3 className="reviews-header">Reviews</h3>
+            {reviews.length > 0 ? (
+                reviews.map((review) => (
+                    <div key={review.id} className="review-item">
+                        <p>{review.content}</p>
+                        <p className="review-rating">Rating: {review.rating}/5</p>
                         {isAdmin && (
-                            <>
-                                <button onClick={() => setEditMode(!editMode)}>
-                                    {editMode ? "Anuluj" : "Edytuj produkt"}
-                                </button>
-                                <button onClick={handleSetQuantityToZero} style={{ marginLeft: "10px" }}>
-                                    Usuń produkt
-                                </button>
-                            </>
+                            <button className="delete-review-button" onClick={() => handleDeleteReview(review.id)}>
+                                Delete Review
+                            </button>
                         )}
                     </div>
-                    <h3 style={{ marginTop: "30px" }}>Opinie</h3>
-                    {reviews.length > 0 ? (
-                        reviews.map((review) => (
-                            <div
-                                key={review.id}
-                                style={{
-                                    margin: "10px 0",
-                                    padding: "10px",
-                                    border: "1px solid #ddd",
-                                    borderRadius: "5px",
-                                    backgroundColor: "#f9f9f9",
-                                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                                }}
-                            >
-                                <p>{review.content}</p>
-                                <p style={{ fontWeight: "bold" }}>Ocena: {review.rating}/5</p>
-                                {isAdmin && (
-                                    <button
-                                        onClick={() => handleDeleteReview(review.id)}
-                                        style={{ backgroundColor: "red", color: "white", border: "none" }}
-                                    >
-                                        Usuń opinię
-                                    </button>
-                                )}
-                            </div>
-                        ))
-                    ) : (
-                        <p>Brak opinii dla tego produktu.</p>
-                    )}
-                </>
+                ))
+            ) : (
+                <p className="no-reviews-text">No reviews for this product.</p>
             )}
         </div>
     );

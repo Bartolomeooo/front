@@ -26,10 +26,18 @@ const OrderDetails: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [expanded, setExpanded] = useState<{ [key: number]: boolean }>({});
+    const [reviews, setReviews] = useState<{ [key: number]: { content: string; rating: number } }>({});
 
     const getAuthHeaders = (): Record<string, string> => {
         const token = localStorage.getItem("token");
-        return token ? { Authorization: `Bearer ${token}` } : {};
+        return token
+            ? {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`, // Dodanie tokenu
+            }
+            : {
+                "Content-Type": "application/json", // Brak tokenu
+            };
     };
 
     const handleToggleReview = (productId: number) => {
@@ -37,6 +45,50 @@ const OrderDetails: React.FC = () => {
             ...prev,
             [productId]: !prev[productId],
         }));
+    };
+
+    const handleReviewChange = (productId: number, field: "content" | "rating", value: string | number) => {
+        setReviews((prev) => ({
+            ...prev,
+            [productId]: {
+                ...prev[productId],
+                [field]: value,
+            },
+        }));
+    };
+
+    const handleSubmitReview = async (productId: number) => {
+        const review = reviews[productId];
+        if (!review || !review.content || !review.rating) {
+            alert("Proszę wypełnić treść opinii i wybrać ocenę.");
+            return;
+        }
+
+        try {
+            const response = await fetch("http://localhost:8080/reviews", {
+                method: "POST",
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    productId: productId,
+                    content: review.content,
+                    rating: review.rating,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Nie udało się wysłać opinii.");
+            }
+
+            alert("Opinia została pomyślnie dodana.");
+            setReviews((prev) => ({
+                ...prev,
+                [productId]: { content: "", rating: 0 },
+            }));
+            setExpanded((prev) => ({ ...prev, [productId]: false }));
+        } catch (err) {
+            console.error(err);
+            alert("Wystąpił błąd podczas wysyłania opinii.");
+        }
     };
 
     useEffect(() => {
@@ -100,8 +152,22 @@ const OrderDetails: React.FC = () => {
                                 <textarea
                                     placeholder="Napisz swoją opinię..."
                                     className="review-input"
+                                    value={reviews[item.product.id]?.content || ""}
+                                    onChange={(e) =>
+                                        handleReviewChange(item.product.id, "content", e.target.value)
+                                    }
                                 ></textarea>
-                                <select className="review-rating">
+                                <select
+                                    className="review-rating-order"
+                                    value={reviews[item.product.id]?.rating || ""}
+                                    onChange={(e) =>
+                                        handleReviewChange(
+                                            item.product.id,
+                                            "rating",
+                                            Number(e.target.value)
+                                        )
+                                    }
+                                >
                                     <option value="">Wybierz ocenę</option>
                                     {[1, 2, 3, 4, 5].map((rating) => (
                                         <option key={rating} value={rating}>
@@ -109,7 +175,10 @@ const OrderDetails: React.FC = () => {
                                         </option>
                                     ))}
                                 </select>
-                                <button className="submit-review-button">
+                                <button
+                                    className="submit-review-button"
+                                    onClick={() => handleSubmitReview(item.product.id)}
+                                >
                                     Wyślij opinię
                                 </button>
                             </div>

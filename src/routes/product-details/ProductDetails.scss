@@ -1,93 +1,214 @@
-.order-details-container {
-  max-width: 800px;
-  margin: 0 auto;
+.product-details {
   padding: 20px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background-color: #fff;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.product-list {
-  list-style-type: none;
-  padding: 0;
+.product-details-container {
+  max-width: 800px;
+  margin: 20px auto;
+  text-align: center;
 }
 
-.product-item {
-  padding: 15px;
-  margin-bottom: 15px;
+.add-to-cart-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px; /* Odstęp między elementami */
+  margin: 20px 0; /* Odstęp od innych elementów */
+}
+
+.select-quantity {
+  padding: 8px;
+  border-radius: 5px;
   border: 1px solid #ddd;
-  border-radius: 8px;
-  background-color: white;
+  font-size: 1rem;
+  width: auto; /* Stała szerokość */
+  text-align: center; /* Wyśrodkowanie tekstu w polu */
+}
+
+.add-to-cart-button {
+  padding: 10px 20px;
+  background-color: #28a745;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+  min-width: 120px; /* Minimalna szerokość przycisku */
+  text-align: center;
+}
+
+.add-to-cart-button:hover {
+  background-color: #218838;
+}
+
+
+.admin-buttons {
+  display: flex;
+  gap: 15px; /* Odstęp między przyciskami */
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.product-description {
+  font-style: italic;
+  color: #555;
+  margin: 10px 0 20px;
+}
+
+.product-price {
+  font-size: 1.2rem;
+  margin: 10px 0;
+}
+
+.product-quantity {
+  margin-bottom: 20px;
+}
+
+.add-to-cart-button {
+  padding: 10px 20px;
+  background-color: #28a745;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+
+.add-to-cart-button:hover {
+  background-color: #218838;
+}
+
+.edit-product-button,
+.cancel-edit-button {
+  background-color: #ffc107;
+  color: #212529;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+
+.edit-product-button:hover,
+.cancel-edit-button:hover {
+  background-color: #e0a800;
+}
+
+.remove-product-button {
+  background-color: #dc3545;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+
+.remove-product-button:hover {
+  background-color: #c82333;
+}
+
+.admin-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.reviews-header {
+  margin-top: 30px;
+}
+
+.review-item {
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.product-info {
-  margin-bottom: 10px;
-  font-size: 1rem;
-}
-
-.toggle-button {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-top: 10px;
-  padding: 10px 15px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.toggle-button:hover {
-  background-color: #0056b3;
-}
-
-.arrow {
-  font-size: 1rem;
-  transition: transform 0.3s;
-}
-
-.arrow.up {
-  transform: rotate(0deg);
-}
-
-.arrow.down {
-  transform: rotate(0deg);
-}
-
-.review-form {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.review-input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-}
-
 .review-rating {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
+  font-weight: bold;
+  font-size: 1rem;
+  margin-top: 5px;
+  color: #000;
+  background: none;
+  border: none;
+  outline: none;
+  box-shadow: none;
 }
 
-.submit-review-button {
-  padding: 10px 20px;
-  background-color: #28a745;
-  color: white;
+.delete-review-button {
+  background-color: #dc3545;
+  color: #fff;
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  font-size: 1rem;
   transition: background-color 0.3s;
 }
 
-.submit-review-button:hover {
-  background-color: #218838;
+.delete-review-button:hover {
+  background-color: #c82333;
+}
+
+.error-text {
+  color: red;
+}
+
+.loading-text {
+  font-size: 1.2rem;
+}
+
+.edit-mode {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 15px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.edit-mode label {
+  font-weight: bold;
+  text-align: right;
+}
+
+.edit-mode input,
+.edit-mode textarea {
+  width: 95%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.edit-mode textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.edit-mode-buttons {
+  grid-column: span 2;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.edit-mode-buttons .cancel-edit-button {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.edit-mode-buttons .cancel-edit-button:hover {
+  background-color: #e0a800;
 }
