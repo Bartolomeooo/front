@@ -1,10 +1,11 @@
 .product-list-container {
   display: flex;
+  min-height: 100vh;
 }
 
 .category-sidebar {
   width: 250px;
-  height: 100%;
+  height: auto;
   padding: 20px;
   text-align: center;
   background-color: #f9f9f9;
