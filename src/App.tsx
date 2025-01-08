@@ -9,7 +9,7 @@ import {
 import ProductList from "./routes/product-list/ProductList";
 import ProductDetails from "./routes/product-details/ProductDetails";
 import Cart from "./routes/cart/Cart";
-import Login from "./routes/login/Login";
+import Login from "./routes/Login/Login"
 import Register from "./routes/register/Register";
 import CreateProduct from "./routes/create-product/CreateProduct";
 import OrderHistory from "./routes/order-history/OrderHistory";

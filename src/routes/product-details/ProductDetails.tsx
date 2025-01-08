@@ -165,7 +165,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ addToCart, isAdmin }) =
                                 }
                             />
 
-                            <label htmlFor="price">Price:</label>
+                            <label htmlFor="price">Cena:</label>
                             <input
                                 id="price"
                                 type="number"
@@ -198,8 +198,8 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ addToCart, isAdmin }) =
                         <>
                             <h1>{product.name}</h1>
                             <p className="product-description">{product.description}</p>
-                            <p className="product-price">Price: {product.price} PLN</p>
-                            <p className="product-quantity">Available: {product.quantity}</p>
+                            <p className="product-price">Cena: {product.price} PLN</p>
+                            <p className="product-quantity">Ilość: {product.quantity}</p>
                             <div className="add-to-cart-container">
                                 <select
                                     value={quantity}
@@ -213,7 +213,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ addToCart, isAdmin }) =
                                     ))}
                                 </select>
                                 <button className="add-to-cart-button" onClick={handleAddToCart}>
-                                    Add to Cart
+                                    Dodaj do koszyka
                                 </button>
                             </div>
                         </>
@@ -230,12 +230,12 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ addToCart, isAdmin }) =
                     )}
                 </div>
             )}
-            <h3 className="reviews-header">Reviews</h3>
+            <h3 className="reviews-header">Opinie</h3>
             {reviews.length > 0 ? (
                 reviews.map((review) => (
                     <div key={review.id} className="review-item">
                         <p>{review.content}</p>
-                        <p className="review-rating">Rating: {review.rating}/5</p>
+                        <p className="review-rating">Ocena: {review.rating}/5</p>
                         {isAdmin && (
                             <button className="delete-review-button" onClick={() => handleDeleteReview(review.id)}>
                                 Delete Review
@@ -244,7 +244,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ addToCart, isAdmin }) =
                     </div>
                 ))
             ) : (
-                <p className="no-reviews-text">No reviews for this product.</p>
+                <p className="no-reviews-text">Brak opinii dla tego produktu.</p>
             )}
         </div>
     );
